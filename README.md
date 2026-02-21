@@ -15,6 +15,7 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Release Highlights (v1.0.0)](#release-highlights-v100)
 - [Webhook Verification (Simple)](#webhook-verification-simple)
 - [Webhook Verification (Advanced)](#webhook-verification-advanced)
 - [Typed Event Parsing](#typed-event-parsing)
@@ -120,6 +121,17 @@ $client = new PayPalClient(
     transport: new CurlTransport(),
 );
 ```
+
+## Release Highlights (v1.0.0)
+
+- PayPal Webhooks signature verification with PayPal-aligned request fields and validation flow.
+- Legacy Instant Payment Notification support maintained for migration-safe integrations.
+- Typed webhook events and enum-driven routing helpers for cleaner handlers.
+- Idempotency guard support to reduce duplicate webhook side effects.
+- Replay-window and cert URL policy controls for stronger production security.
+- Framework-agnostic adapters for request extraction without framework lock-in.
+- Native cURL transport plus extension interface for custom HTTP stacks.
+- CI-validated on PHP 8.2, 8.3, 8.4, and 8.5.
 
 ## Webhook Verification (Simple)
 
@@ -405,13 +417,16 @@ try {
 
 ## Production Checklist
 
-- Always verify webhook signatures before processing payloads.
-- Enforce replay-window checks (`maxWebhookTransmissionAgeSeconds`) and keep clock skew tight.
-- Persist processed webhook event IDs to prevent duplicates.
-- Use HTTPS endpoint only.
-- Keep `clientSecret` outside source control.
-- Prefer Webhooks for all new integrations.
-- Treat Instant Payment Notification as legacy migration path.
+- Configure a unique webhook endpoint per environment (sandbox and live).
+- Verify webhook signatures before any business logic.
+- Set `maxWebhookTransmissionAgeSeconds` and `allowedWebhookClockSkewSeconds` for replay protection.
+- Keep `strictPayPalCertUrlValidation` enabled in production.
+- Persist webhook event IDs in a durable store and enable idempotency guard.
+- Handle verification failures with fail-closed behavior (return non-2xx on invalid signatures).
+- Keep `clientSecret` in a secure secret store; never commit credentials.
+- Log PayPal `debug_id` for failed verification calls to simplify support investigations.
+- Monitor duplicate, failed, and unknown event-type counts.
+- Prefer Webhooks for all new integrations; treat Instant Payment Notification as legacy-only.
 
 ## Testing
 
