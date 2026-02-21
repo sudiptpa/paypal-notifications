@@ -11,8 +11,14 @@ final class EventFactory
      */
     public static function fromPayload(array $payload): WebhookEventInterface
     {
-        // Phase 1: Always return a safe envelope. Specific event mappings
-        // are added incrementally in later phases.
-        return new UnknownWebhookEvent($payload);
+        $eventType = (string) ($payload['event_type'] ?? '');
+
+        return match ($eventType) {
+            'PAYMENT.CAPTURE.COMPLETED' => new PaymentCaptureCompletedEvent($payload),
+            'PAYMENT.CAPTURE.DENIED' => new PaymentCaptureDeniedEvent($payload),
+            'PAYMENT.CAPTURE.REFUNDED' => new PaymentCaptureRefundedEvent($payload),
+            'CHECKOUT.ORDER.APPROVED' => new CheckoutOrderApprovedEvent($payload),
+            default => new UnknownWebhookEvent($payload),
+        };
     }
 }
