@@ -48,7 +48,17 @@ All notable changes to this project will be documented in this file.
   - replay-window validation via `maxWebhookTransmissionAgeSeconds`
   - configurable future skew tolerance via `allowedWebhookClockSkewSeconds`
   - configurable cert URL strictness via `strictPayPalCertUrlValidation`
+  - configurable trusted cert host suffixes, cert path prefix, and HTTPS-port policy
   - `WebhooksResource::requestFromRawPayload(...)` to ensure config-aligned request creation
+- Framework adapter primitives:
+  - `WebhookRequestAdapterInterface`
+  - `ArrayWebhookRequestAdapter`
+  - `SuperglobalWebhookRequestAdapter`
+  - `WebhooksResource::requestFromAdapter(...)`
+- Structured observability workflow:
+  - `WebhookProcessor`
+  - `WebhookProcessingResult`
+  - `WebhookObserverInterface` + `NullWebhookObserver`
 - Tests for event envelope parsing and invalid raw-event payload handling.
 - Tests for typed event mapping, router dispatching, and idempotency guard behavior.
 - Added `SECURITY.md`, `SUPPORT.md`, and issue templates for production OSS maintenance.

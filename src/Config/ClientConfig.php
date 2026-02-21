@@ -18,6 +18,10 @@ final readonly class ClientConfig
         public ?int $maxWebhookTransmissionAgeSeconds = 300,
         public int $allowedWebhookClockSkewSeconds = 30,
         public bool $strictPayPalCertUrlValidation = true,
+        /** @var list<string> */
+        public array $trustedWebhookCertHostSuffixes = ['paypal.com'],
+        public string $requiredWebhookCertPathPrefix = '/v1/notifications/certs/',
+        public bool $requireDefaultHttpsPortForWebhookCertUrl = true,
     ) {
         if ($this->timeoutSeconds <= 0) {
             throw new ConfigurationException('timeoutSeconds must be greater than zero.');
@@ -29,6 +33,14 @@ final readonly class ClientConfig
 
         if ($this->allowedWebhookClockSkewSeconds < 0) {
             throw new ConfigurationException('allowedWebhookClockSkewSeconds must be >= 0.');
+        }
+
+        if ($this->requiredWebhookCertPathPrefix === '') {
+            throw new ConfigurationException('requiredWebhookCertPathPrefix must not be empty.');
+        }
+
+        if ($this->trustedWebhookCertHostSuffixes === []) {
+            throw new ConfigurationException('trustedWebhookCertHostSuffixes must not be empty.');
         }
     }
 

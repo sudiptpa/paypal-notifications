@@ -10,9 +10,13 @@ use Sujip\PayPal\Notifications\Config\SystemClock;
 use Sujip\PayPal\Notifications\Contracts\ClockInterface;
 use Sujip\PayPal\Notifications\Contracts\LoggerInterface;
 use Sujip\PayPal\Notifications\Contracts\TransportInterface;
+use Sujip\PayPal\Notifications\Contracts\WebhookObserverInterface;
+use Sujip\PayPal\Notifications\Idempotency\WebhookIdempotencyGuard;
 use Sujip\PayPal\Notifications\Log\NullLogger;
 use Sujip\PayPal\Notifications\Resource\InstantPaymentNotificationResource;
 use Sujip\PayPal\Notifications\Resource\WebhooksResource;
+use Sujip\PayPal\Notifications\Webhook\WebhookEventRouter;
+use Sujip\PayPal\Notifications\Webhook\WebhookProcessor;
 
 final class PayPalClient
 {
@@ -51,5 +55,13 @@ final class PayPalClient
     public function ipn(): InstantPaymentNotificationResource
     {
         return $this->instantPaymentNotification();
+    }
+
+    public function webhookProcessor(
+        ?WebhookEventRouter $router = null,
+        ?WebhookIdempotencyGuard $idempotencyGuard = null,
+        ?WebhookObserverInterface $observer = null,
+    ): WebhookProcessor {
+        return new WebhookProcessor($this->webhooks(), $router, $idempotencyGuard, $observer);
     }
 }

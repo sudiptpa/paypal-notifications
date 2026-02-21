@@ -9,9 +9,11 @@ use Sujip\PayPal\Notifications\Config\ClientConfig;
 use Sujip\PayPal\Notifications\Contracts\ClockInterface;
 use Sujip\PayPal\Notifications\Contracts\LoggerInterface;
 use Sujip\PayPal\Notifications\Contracts\TransportInterface;
+use Sujip\PayPal\Notifications\Contracts\WebhookRequestAdapterInterface;
 use Sujip\PayPal\Notifications\Enum\VerificationStatus;
 use Sujip\PayPal\Notifications\Exception\VerificationException;
 use Sujip\PayPal\Notifications\Http\HttpRequest;
+use Sujip\PayPal\Notifications\Webhook\WebhookCertUrlPolicy;
 use Sujip\PayPal\Notifications\Webhook\Event\EventFactory;
 use Sujip\PayPal\Notifications\Webhook\Event\WebhookEventInterface;
 use Sujip\PayPal\Notifications\Webhook\VerifyWebhookSignatureRequest;
@@ -25,6 +27,7 @@ final class WebhooksResource
         private readonly OAuthTokenProvider $tokenProvider,
         private readonly LoggerInterface $logger,
         private readonly ClockInterface $clock,
+        private readonly WebhookCertUrlPolicy $certUrlPolicy = new WebhookCertUrlPolicy(),
     ) {
     }
 
@@ -38,6 +41,10 @@ final class WebhooksResource
                 maxAgeSeconds: $this->config->maxWebhookTransmissionAgeSeconds,
                 allowedFutureSkewSeconds: $this->config->allowedWebhookClockSkewSeconds,
             );
+        }
+
+        if ($this->config->strictPayPalCertUrlValidation) {
+            $this->certUrlPolicy->assertValid($request->certUrl, $this->config);
         }
 
         $token = $this->tokenProvider->token();
@@ -102,6 +109,15 @@ final class WebhooksResource
             headers: $headers,
             webhookId: $webhookId,
             strictPayPalCertUrlValidation: $this->config->strictPayPalCertUrlValidation,
+        );
+    }
+
+    public function requestFromAdapter(WebhookRequestAdapterInterface $adapter): VerifyWebhookSignatureRequest
+    {
+        return $this->requestFromRawPayload(
+            rawBody: $adapter->rawBody(),
+            headers: $adapter->headers(),
+            webhookId: $adapter->webhookId(),
         );
     }
 

@@ -20,6 +20,8 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Typed Event Parsing](#typed-event-parsing)
 - [Event Catalog](#event-catalog)
 - [Event Routing](#event-routing)
+- [Framework Adapters](#framework-adapters)
+- [Webhook Processor](#webhook-processor)
 - [Idempotency Guard](#idempotency-guard)
 - [Instant Payment Notification (Legacy)](#instant-payment-notification-legacy)
 - [Transport Extension](#transport-extension)
@@ -72,6 +74,8 @@ Design goals:
   - `PAYMENT.PAYOUTS-ITEM.DENIED`
 - Unknown event fallback (`UnknownWebhookEvent`) for forward compatibility
 - Event router helper for clean application handlers
+- Framework adapter contract for framework-specific request bridges
+- High-level `WebhookProcessor` with structured processing result (observability friendly)
 - Idempotency guard support for duplicate event prevention
 - Legacy Instant Payment Notification verification (`cmd=_notify-validate`)
 - Native cURL transport included (`CurlTransport`)
@@ -244,6 +248,63 @@ $router = (new WebhookEventRouter())
 $router->dispatch($event);
 ```
 
+## Framework Adapters
+
+Use `WebhookRequestAdapterInterface` to bridge framework request objects without adding framework dependencies to this package.
+
+```php
+use Sujip\PayPal\Notifications\Contracts\WebhookRequestAdapterInterface;
+
+final readonly class LaravelWebhookAdapter implements WebhookRequestAdapterInterface
+{
+    public function __construct(private \Illuminate\Http\Request $request)
+    {
+    }
+
+    public function rawBody(): string
+    {
+        return (string) $this->request->getContent();
+    }
+
+    public function headers(): array
+    {
+        return $this->request->headers->all();
+    }
+
+    public function webhookId(): ?string
+    {
+        return config('services.paypal.webhook_id');
+    }
+}
+```
+
+Built-in generic adapters:
+
+- `ArrayWebhookRequestAdapter`
+- `SuperglobalWebhookRequestAdapter`
+
+## Webhook Processor
+
+`WebhookProcessor` gives an end-to-end flow: request extraction -> signature verification -> event parsing -> optional idempotency -> optional routing -> structured result.
+
+```php
+use Sujip\PayPal\Notifications\Adapter\SuperglobalWebhookRequestAdapter;
+use Sujip\PayPal\Notifications\Idempotency\InMemoryIdempotencyStore;
+use Sujip\PayPal\Notifications\Idempotency\WebhookIdempotencyGuard;
+use Sujip\PayPal\Notifications\Webhook\WebhookEventRouter;
+
+$router = (new WebhookEventRouter())->onCaptureCompleted(fn () => null);
+$guard = new WebhookIdempotencyGuard(new InMemoryIdempotencyStore());
+
+$result = $client->webhookProcessor($router, $guard)->process(
+    SuperglobalWebhookRequestAdapter::fromGlobals()
+);
+
+if (!$result->accepted) {
+    http_response_code(400);
+}
+```
+
 ## Idempotency Guard
 
 Use idempotency to avoid duplicate webhook processing:
@@ -318,6 +379,7 @@ Inject custom transport into `PayPalClient`.
 - `examples/webhook-endpoint.php` - full webhook verification + event routing flow.
 - `examples/ipn-endpoint.php` - legacy Instant Payment Notification verification endpoint.
 - `examples/custom-transport.php` - transport contract integration template.
+- `examples/framework-adapter-template.php` - framework adapter contract template.
 
 ## Error Handling
 

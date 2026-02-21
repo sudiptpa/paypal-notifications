@@ -30,5 +30,11 @@
   - `maxWebhookTransmissionAgeSeconds`
   - `allowedWebhookClockSkewSeconds`
   - `strictPayPalCertUrlValidation`
+  - `trustedWebhookCertHostSuffixes`
+  - `requiredWebhookCertPathPrefix`
+  - `requireDefaultHttpsPortForWebhookCertUrl`
 - Config-aligned request creation via `$client->webhooks()->requestFromRawPayload(...)`.
+- Framework adapter support via `WebhookRequestAdapterInterface` and
+  `$client->webhooks()->requestFromAdapter(...)`.
+- End-to-end processing with structured result via `$client->webhookProcessor(...)`.
 - Better error boundaries and safer production behavior.
