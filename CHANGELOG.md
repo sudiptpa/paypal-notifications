@@ -52,6 +52,7 @@ All notable changes to this project will be documented in this file.
 - Tests for event envelope parsing and invalid raw-event payload handling.
 - Tests for typed event mapping, router dispatching, and idempotency guard behavior.
 - Added `SECURITY.md`, `SUPPORT.md`, and issue templates for production OSS maintenance.
+- Added `examples/` for webhook endpoint, IPN endpoint, and custom transport integration.
 - CI now runs PHPUnit plus PHP syntax lint (`php -l`) across `src/` and `tests/`.
 
 ## [1.0.0] - 2026-02-21

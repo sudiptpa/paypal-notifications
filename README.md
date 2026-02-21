@@ -23,6 +23,7 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Idempotency Guard](#idempotency-guard)
 - [Instant Payment Notification (Legacy)](#instant-payment-notification-legacy)
 - [Transport Extension](#transport-extension)
+- [Examples](#examples)
 - [Error Handling](#error-handling)
 - [Production Checklist](#production-checklist)
 - [Testing](#testing)
@@ -311,6 +312,12 @@ final class CustomTransport implements TransportInterface
 ```
 
 Inject custom transport into `PayPalClient`.
+
+## Examples
+
+- `examples/webhook-endpoint.php` - full webhook verification + event routing flow.
+- `examples/ipn-endpoint.php` - legacy Instant Payment Notification verification endpoint.
+- `examples/custom-transport.php` - transport contract integration template.
 
 ## Error Handling
 
