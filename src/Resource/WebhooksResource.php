@@ -6,6 +6,7 @@ namespace Sujip\PayPal\Notifications\Resource;
 
 use Sujip\PayPal\Notifications\Auth\OAuthTokenProvider;
 use Sujip\PayPal\Notifications\Config\ClientConfig;
+use Sujip\PayPal\Notifications\Contracts\ClockInterface;
 use Sujip\PayPal\Notifications\Contracts\LoggerInterface;
 use Sujip\PayPal\Notifications\Contracts\TransportInterface;
 use Sujip\PayPal\Notifications\Enum\VerificationStatus;
@@ -23,12 +24,21 @@ final class WebhooksResource
         private readonly TransportInterface $transport,
         private readonly OAuthTokenProvider $tokenProvider,
         private readonly LoggerInterface $logger,
+        private readonly ClockInterface $clock,
     ) {
     }
 
     public function verifySignature(VerifyWebhookSignatureRequest $request): VerifyWebhookSignatureResult
     {
         $this->config->ensureWebhookConfiguration();
+
+        if ($this->config->maxWebhookTransmissionAgeSeconds !== null) {
+            $request->assertTransmissionTimeWithin(
+                now: $this->clock->now(),
+                maxAgeSeconds: $this->config->maxWebhookTransmissionAgeSeconds,
+                allowedFutureSkewSeconds: $this->config->allowedWebhookClockSkewSeconds,
+            );
+        }
 
         $token = $this->tokenProvider->token();
         $body = json_encode($request->toPayload($this->config->webhookId));
@@ -80,6 +90,19 @@ final class WebhooksResource
     public function verifyWebhookSignature(VerifyWebhookSignatureRequest $request): VerifyWebhookSignatureResult
     {
         return $this->verifySignature($request);
+    }
+
+    /**
+     * @param array<string,mixed> $headers
+     */
+    public function requestFromRawPayload(string $rawBody, array $headers, ?string $webhookId = null): VerifyWebhookSignatureRequest
+    {
+        return VerifyWebhookSignatureRequest::fromRawPayload(
+            rawBody: $rawBody,
+            headers: $headers,
+            webhookId: $webhookId,
+            strictPayPalCertUrlValidation: $this->config->strictPayPalCertUrlValidation,
+        );
     }
 
     /**

@@ -26,4 +26,9 @@
 - Typed enums and result models.
 - Typed webhook event parsing (`parseEvent` / `parseRawEvent`) with safe unknown fallback.
 - Optional event routing and idempotency helpers for production webhook consumers.
+- Webhook verification safety knobs in `ClientConfig`:
+  - `maxWebhookTransmissionAgeSeconds`
+  - `allowedWebhookClockSkewSeconds`
+  - `strictPayPalCertUrlValidation`
+- Config-aligned request creation via `$client->webhooks()->requestFromRawPayload(...)`.
 - Better error boundaries and safer production behavior.

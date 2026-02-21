@@ -6,6 +6,7 @@ namespace Sujip\PayPal\Notifications\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Sujip\PayPal\Notifications\Webhook\Event\EventFactory;
+use Sujip\PayPal\Notifications\Webhook\Event\WebhookEventType;
 use Sujip\PayPal\Notifications\Webhook\WebhookEventRouter;
 
 final class WebhookEventRouterTest extends TestCase
@@ -58,5 +59,35 @@ final class WebhookEventRouterTest extends TestCase
         $router = new WebhookEventRouter();
 
         $this->assertNull($router->dispatch($event));
+    }
+
+    public function testDispatchesUsingEnumRegistration(): void
+    {
+        $event = EventFactory::fromPayload([
+            'id' => 'WH-400',
+            'event_type' => 'CUSTOMER.DISPUTE.CREATED',
+            'resource' => ['dispute_id' => 'PP-D-400'],
+        ]);
+
+        $result = (new WebhookEventRouter())
+            ->onType(WebhookEventType::CustomerDisputeCreated, static fn ($event): string => 'dispute:'.$event->id())
+            ->dispatch($event);
+
+        $this->assertSame('dispute:WH-400', $result);
+    }
+
+    public function testDispatchesUsingConvenienceMethods(): void
+    {
+        $event = EventFactory::fromPayload([
+            'id' => 'WH-500',
+            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
+            'resource' => ['id' => 'REF-500'],
+        ]);
+
+        $result = (new WebhookEventRouter())
+            ->onCaptureRefunded(static fn ($event): string => 'refund:'.$event->id())
+            ->dispatch($event);
+
+        $this->assertSame('refund:WH-500', $result);
     }
 }
