@@ -5,7 +5,7 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 [![CI](https://github.com/sudiptpa/paypal-notifications/actions/workflows/ci.yml/badge.svg)](https://github.com/sudiptpa/paypal-notifications/actions/workflows/ci.yml)
 [![Latest Release](https://img.shields.io/github/v/release/sudiptpa/paypal-notifications?sort=semver)](https://github.com/sudiptpa/paypal-notifications/releases)
 [![Packagist](https://img.shields.io/packagist/v/sudiptpa/paypal-notifications)](https://packagist.org/packages/sudiptpa/paypal-notifications)
-[![PHP](https://img.shields.io/badge/php-8.1--8.5-777bb4.svg)](https://www.php.net/)
+[![PHP](https://img.shields.io/badge/php-8.2--8.5-777bb4.svg)](https://www.php.net/)
 [![License](https://img.shields.io/github/license/sudiptpa/paypal-notifications)](LICENSE)
 
 ## Table of Contents
@@ -57,7 +57,7 @@ Design goals:
 
 ## Requirements
 
-- PHP `^8.1` (supports up to `<8.6`)
+- PHP `^8.2` (supports up to `<8.6`)
 - `ext-json`
 - `ext-curl`
 

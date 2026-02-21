@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- PHP baseline standardized to 8.2+ with support through 8.5.
 - Phase 1 typed webhook event envelope support:
   - `WebhookEventInterface`
   - `UnknownWebhookEvent`
