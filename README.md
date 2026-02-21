@@ -18,10 +18,12 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Webhook Verification (Simple)](#webhook-verification-simple)
 - [Webhook Verification (Advanced)](#webhook-verification-advanced)
 - [Typed Event Parsing](#typed-event-parsing)
+- [Event Catalog](#event-catalog)
 - [Event Routing](#event-routing)
 - [Idempotency Guard](#idempotency-guard)
 - [Instant Payment Notification (Legacy)](#instant-payment-notification-legacy)
 - [Transport Extension](#transport-extension)
+- [Examples](#examples)
 - [Error Handling](#error-handling)
 - [Production Checklist](#production-checklist)
 - [Testing](#testing)
@@ -53,7 +55,21 @@ Design goals:
   - `PAYMENT.CAPTURE.COMPLETED`
   - `PAYMENT.CAPTURE.DENIED`
   - `PAYMENT.CAPTURE.REFUNDED`
+  - `PAYMENT.CAPTURE.PENDING`
+  - `PAYMENT.CAPTURE.REVERSED`
   - `CHECKOUT.ORDER.APPROVED`
+  - `CHECKOUT.ORDER.COMPLETED`
+  - `CUSTOMER.DISPUTE.CREATED`
+  - `CUSTOMER.DISPUTE.RESOLVED`
+  - `BILLING.SUBSCRIPTION.CREATED`
+  - `BILLING.SUBSCRIPTION.CANCELLED`
+  - `BILLING.SUBSCRIPTION.ACTIVATED`
+  - `BILLING.SUBSCRIPTION.SUSPENDED`
+  - `BILLING.SUBSCRIPTION.EXPIRED`
+  - `BILLING.SUBSCRIPTION.PAYMENT.FAILED`
+  - `PAYMENT.PAYOUTSBATCH.SUCCESS`
+  - `PAYMENT.PAYOUTS-ITEM.SUCCEEDED`
+  - `PAYMENT.PAYOUTS-ITEM.DENIED`
 - Unknown event fallback (`UnknownWebhookEvent`) for forward compatibility
 - Event router helper for clean application handlers
 - Idempotency guard support for duplicate event prevention
@@ -92,6 +108,9 @@ $client = new PayPalClient(
         clientSecret: $_ENV['PAYPAL_CLIENT_SECRET'],
         webhookId: $_ENV['PAYPAL_WEBHOOK_ID'],
         environment: Environment::Sandbox,
+        maxWebhookTransmissionAgeSeconds: 300,
+        allowedWebhookClockSkewSeconds: 30,
+        strictPayPalCertUrlValidation: true,
     ),
     transport: new CurlTransport(),
 );
@@ -109,7 +128,7 @@ use Sujip\PayPal\Notifications\Webhook\VerifyWebhookSignatureRequest;
 $rawBody = file_get_contents('php://input') ?: '';
 $headers = function_exists('getallheaders') ? getallheaders() : $_SERVER;
 
-$request = VerifyWebhookSignatureRequest::fromRawPayload($rawBody, $headers);
+$request = $client->webhooks()->requestFromRawPayload($rawBody, $headers);
 $result = $client->webhooks()->verifySignature($request);
 
 if (!$result->isSuccess()) {
@@ -159,23 +178,64 @@ Mapped event models:
 - `PaymentCaptureCompletedEvent`
 - `PaymentCaptureDeniedEvent`
 - `PaymentCaptureRefundedEvent`
+- `PaymentCapturePendingEvent`
+- `PaymentCaptureReversedEvent`
 - `CheckoutOrderApprovedEvent`
+- `CheckoutOrderCompletedEvent`
+- `CustomerDisputeCreatedEvent`
+- `CustomerDisputeResolvedEvent`
+- `BillingSubscriptionCreatedEvent`
+- `BillingSubscriptionCancelledEvent`
+- `BillingSubscriptionActivatedEvent`
+- `BillingSubscriptionSuspendedEvent`
+- `BillingSubscriptionExpiredEvent`
+- `BillingSubscriptionPaymentFailedEvent`
+- `PaymentPayoutsBatchSuccessEvent`
+- `PaymentPayoutsItemSucceededEvent`
+- `PaymentPayoutsItemDeniedEvent`
 
 Unmapped events return `UnknownWebhookEvent` and preserve full raw payload.
+
+## Event Catalog
+
+| PayPal Event Type | Typed Class |
+| --- | --- |
+| `PAYMENT.CAPTURE.COMPLETED` | `PaymentCaptureCompletedEvent` |
+| `PAYMENT.CAPTURE.DENIED` | `PaymentCaptureDeniedEvent` |
+| `PAYMENT.CAPTURE.REFUNDED` | `PaymentCaptureRefundedEvent` |
+| `PAYMENT.CAPTURE.PENDING` | `PaymentCapturePendingEvent` |
+| `PAYMENT.CAPTURE.REVERSED` | `PaymentCaptureReversedEvent` |
+| `CHECKOUT.ORDER.APPROVED` | `CheckoutOrderApprovedEvent` |
+| `CHECKOUT.ORDER.COMPLETED` | `CheckoutOrderCompletedEvent` |
+| `CUSTOMER.DISPUTE.CREATED` | `CustomerDisputeCreatedEvent` |
+| `CUSTOMER.DISPUTE.RESOLVED` | `CustomerDisputeResolvedEvent` |
+| `BILLING.SUBSCRIPTION.CREATED` | `BillingSubscriptionCreatedEvent` |
+| `BILLING.SUBSCRIPTION.CANCELLED` | `BillingSubscriptionCancelledEvent` |
+| `BILLING.SUBSCRIPTION.ACTIVATED` | `BillingSubscriptionActivatedEvent` |
+| `BILLING.SUBSCRIPTION.SUSPENDED` | `BillingSubscriptionSuspendedEvent` |
+| `BILLING.SUBSCRIPTION.EXPIRED` | `BillingSubscriptionExpiredEvent` |
+| `BILLING.SUBSCRIPTION.PAYMENT.FAILED` | `BillingSubscriptionPaymentFailedEvent` |
+| `PAYMENT.PAYOUTSBATCH.SUCCESS` | `PaymentPayoutsBatchSuccessEvent` |
+| `PAYMENT.PAYOUTS-ITEM.SUCCEEDED` | `PaymentPayoutsItemSucceededEvent` |
+| `PAYMENT.PAYOUTS-ITEM.DENIED` | `PaymentPayoutsItemDeniedEvent` |
 
 ## Event Routing
 
 Use `WebhookEventRouter` to map event types to handlers:
 
 ```php
+use Sujip\PayPal\Notifications\Webhook\Event\WebhookEventType;
 use Sujip\PayPal\Notifications\Webhook\WebhookEventRouter;
 
 $router = (new WebhookEventRouter())
-    ->on('PAYMENT.CAPTURE.COMPLETED', function ($event) {
+    ->onCaptureCompleted(function ($event) {
         // handle capture completed
     })
-    ->on('CHECKOUT.ORDER.APPROVED', function ($event) {
-        // handle order approved
+    ->onType(WebhookEventType::CustomerDisputeCreated, function ($event) {
+        // handle dispute created
+    })
+    ->onSubscriptionPaymentFailed(function ($event) {
+        // handle subscription payment failed
     })
     ->fallback(function ($event) {
         // log/ignore unknown event types
@@ -253,6 +313,12 @@ final class CustomTransport implements TransportInterface
 
 Inject custom transport into `PayPalClient`.
 
+## Examples
+
+- `examples/webhook-endpoint.php` - full webhook verification + event routing flow.
+- `examples/ipn-endpoint.php` - legacy Instant Payment Notification verification endpoint.
+- `examples/custom-transport.php` - transport contract integration template.
+
 ## Error Handling
 
 Main exceptions:
@@ -277,6 +343,7 @@ try {
 ## Production Checklist
 
 - Always verify webhook signatures before processing payloads.
+- Enforce replay-window checks (`maxWebhookTransmissionAgeSeconds`) and keep clock skew tight.
 - Persist processed webhook event IDs to prevent duplicates.
 - Use HTTPS endpoint only.
 - Keep `clientSecret` outside source control.
@@ -293,6 +360,8 @@ composer test
 ## Contributing
 
 Contributions are welcome. Include tests for behavior changes.
+
+See `SUPPORT.md` for support flow and `SECURITY.md` for vulnerability reporting.
 
 ## License
 

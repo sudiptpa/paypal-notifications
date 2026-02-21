@@ -17,14 +17,43 @@ All notable changes to this project will be documented in this file.
   - `PaymentCaptureCompletedEvent`
   - `PaymentCaptureDeniedEvent`
   - `PaymentCaptureRefundedEvent`
+  - `PaymentCapturePendingEvent`
+  - `PaymentCaptureReversedEvent`
   - `CheckoutOrderApprovedEvent`
+  - `CheckoutOrderCompletedEvent`
+  - `CustomerDisputeCreatedEvent`
+  - `CustomerDisputeResolvedEvent`
+  - `BillingSubscriptionCreatedEvent`
+  - `BillingSubscriptionCancelledEvent`
+  - `BillingSubscriptionActivatedEvent`
+  - `BillingSubscriptionSuspendedEvent`
+  - `BillingSubscriptionExpiredEvent`
+  - `BillingSubscriptionPaymentFailedEvent`
+  - `PaymentPayoutsBatchSuccessEvent`
+  - `PaymentPayoutsItemSucceededEvent`
+  - `PaymentPayoutsItemDeniedEvent`
+- `WebhookEventType` enum for discoverable event constants.
 - `WebhookEventRouter` for event-type based handler dispatching with fallback support.
+- Router ergonomics:
+  - `onType(WebhookEventType::...)`
+  - `onCaptureCompleted(...)`
+  - `onCaptureRefunded(...)`
+  - `onDisputeCreated(...)`
+  - `onSubscriptionPaymentFailed(...)`
 - Idempotency helpers:
   - `IdempotencyStoreInterface`
   - `InMemoryIdempotencyStore`
   - `WebhookIdempotencyGuard`
+- Webhook verification hardening:
+  - replay-window validation via `maxWebhookTransmissionAgeSeconds`
+  - configurable future skew tolerance via `allowedWebhookClockSkewSeconds`
+  - configurable cert URL strictness via `strictPayPalCertUrlValidation`
+  - `WebhooksResource::requestFromRawPayload(...)` to ensure config-aligned request creation
 - Tests for event envelope parsing and invalid raw-event payload handling.
 - Tests for typed event mapping, router dispatching, and idempotency guard behavior.
+- Added `SECURITY.md`, `SUPPORT.md`, and issue templates for production OSS maintenance.
+- Added `examples/` for webhook endpoint, IPN endpoint, and custom transport integration.
+- CI now runs PHPUnit plus PHP syntax lint (`php -l`) across `src/` and `tests/`.
 
 ## [1.0.0] - 2026-02-21
 

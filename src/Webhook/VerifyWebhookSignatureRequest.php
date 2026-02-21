@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sujip\PayPal\Notifications\Webhook;
 
 use Sujip\PayPal\Notifications\Exception\InvalidPayloadException;
+use Sujip\PayPal\Notifications\Exception\VerificationException;
 
 final readonly class VerifyWebhookSignatureRequest
 {
@@ -20,6 +21,7 @@ final readonly class VerifyWebhookSignatureRequest
         public array $webhookEvent,
         public string $rawBody,
         public ?string $webhookId = null,
+        public bool $strictPayPalCertUrlValidation = true,
     ) {
         if (
             $this->transmissionId === ''
@@ -31,13 +33,20 @@ final readonly class VerifyWebhookSignatureRequest
             throw new InvalidPayloadException('Missing required fields for webhook signature verification request.');
         }
 
-        $this->assertPayPalCertUrl($this->certUrl);
+        if ($this->strictPayPalCertUrlValidation) {
+            $this->assertPayPalCertUrl($this->certUrl);
+        }
     }
 
     /**
      * @param array<string,mixed> $headers
      */
-    public static function fromRawPayload(string $rawBody, array $headers, ?string $webhookId = null): self
+    public static function fromRawPayload(
+        string $rawBody,
+        array $headers,
+        ?string $webhookId = null,
+        bool $strictPayPalCertUrlValidation = true,
+    ): self
     {
         $decoded = json_decode($rawBody, true);
         if (!is_array($decoded)) {
@@ -55,6 +64,7 @@ final readonly class VerifyWebhookSignatureRequest
             webhookEvent: $decoded,
             rawBody: $rawBody,
             webhookId: $webhookId,
+            strictPayPalCertUrlValidation: $strictPayPalCertUrlValidation,
         );
     }
 
@@ -93,6 +103,28 @@ final readonly class VerifyWebhookSignatureRequest
 
         if (!$isTrustedHost) {
             throw new InvalidPayloadException('cert_url must be hosted on a PayPal domain.');
+        }
+    }
+
+    public function assertTransmissionTimeWithin(
+        \DateTimeImmutable $now,
+        int $maxAgeSeconds,
+        int $allowedFutureSkewSeconds = 0,
+    ): void {
+        try {
+            $transmissionTime = new \DateTimeImmutable($this->transmissionTime);
+        } catch (\Exception) {
+            throw new VerificationException('transmission_time is not a valid datetime.');
+        }
+
+        $ageSeconds = $now->getTimestamp() - $transmissionTime->getTimestamp();
+
+        if ($ageSeconds < -$allowedFutureSkewSeconds) {
+            throw new VerificationException('Webhook transmission_time is in the future beyond allowed clock skew.');
+        }
+
+        if ($ageSeconds > $maxAgeSeconds) {
+            throw new VerificationException('Webhook transmission_time is older than allowed replay window.');
         }
     }
 }

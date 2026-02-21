@@ -30,7 +30,7 @@ final class PayPalClient
 
         $tokenProvider = new OAuthTokenProvider($this->config, $this->transport, $clock, $logger);
 
-        $this->webhooks = new WebhooksResource($this->config, $this->transport, $tokenProvider, $logger);
+        $this->webhooks = new WebhooksResource($this->config, $this->transport, $tokenProvider, $logger, $clock);
         $this->instantPaymentNotification = new InstantPaymentNotificationResource(
             $this->config,
             $this->transport,

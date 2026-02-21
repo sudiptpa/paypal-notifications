@@ -15,9 +15,20 @@ final readonly class ClientConfig
         public string $webhookId,
         public Environment $environment = Environment::Sandbox,
         public int $timeoutSeconds = 10,
+        public ?int $maxWebhookTransmissionAgeSeconds = 300,
+        public int $allowedWebhookClockSkewSeconds = 30,
+        public bool $strictPayPalCertUrlValidation = true,
     ) {
         if ($this->timeoutSeconds <= 0) {
             throw new ConfigurationException('timeoutSeconds must be greater than zero.');
+        }
+
+        if ($this->maxWebhookTransmissionAgeSeconds !== null && $this->maxWebhookTransmissionAgeSeconds < 0) {
+            throw new ConfigurationException('maxWebhookTransmissionAgeSeconds must be null or >= 0.');
+        }
+
+        if ($this->allowedWebhookClockSkewSeconds < 0) {
+            throw new ConfigurationException('allowedWebhookClockSkewSeconds must be >= 0.');
         }
     }
 
