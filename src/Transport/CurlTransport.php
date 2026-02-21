@@ -14,7 +14,7 @@ final class CurlTransport implements TransportInterface
     public function send(HttpRequest $request): HttpResponse
     {
         $ch = curl_init();
-        if ($ch === false) {
+        if (!$ch instanceof \CurlHandle) {
             throw new TransportException('Unable to initialize cURL transport.');
         }
 
