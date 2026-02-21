@@ -29,11 +29,12 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Error Handling](#error-handling)
 - [Production Checklist](#production-checklist)
 - [Testing](#testing)
+- [Manual Sandbox Smoke Test](#manual-sandbox-smoke-test)
 - [Contributing](#contributing)
 
 ## Why This Package
 
-This SDK is built for modern PHP projects that need PayPal notification verification without framework lock-in or heavy HTTP dependencies.
+This SDK is for PHP projects that need reliable PayPal notification verification without framework lock-in.
 
 Design goals:
 
@@ -41,7 +42,7 @@ Design goals:
 - minimal hard dependencies
 - explicit models and enums
 - transport extensibility
-- safe defaults for production usage
+- safe production defaults
 
 ## Features
 
@@ -75,7 +76,7 @@ Design goals:
 - Unknown event fallback (`UnknownWebhookEvent`) for forward compatibility
 - Event router helper for clean application handlers
 - Framework adapter contract for framework-specific request bridges
-- High-level `WebhookProcessor` with structured processing result (observability friendly)
+- High-level `WebhookProcessor` with structured processing result (easy to log and monitor)
 - Idempotency guard support for duplicate event prevention
 - Legacy Instant Payment Notification verification (`cmd=_notify-validate`)
 - Native cURL transport included (`CurlTransport`)
@@ -198,7 +199,7 @@ Mapped event models:
 - `PaymentPayoutsItemSucceededEvent`
 - `PaymentPayoutsItemDeniedEvent`
 
-Unmapped events return `UnknownWebhookEvent` and preserve full raw payload.
+Unmapped events return `UnknownWebhookEvent` and keep the full raw payload.
 
 ## Event Catalog
 
@@ -285,7 +286,7 @@ Built-in generic adapters:
 
 ## Webhook Processor
 
-`WebhookProcessor` gives an end-to-end flow: request extraction -> signature verification -> event parsing -> optional idempotency -> optional routing -> structured result.
+`WebhookProcessor` handles the full flow: request extraction -> signature verification -> event parsing -> optional idempotency -> optional routing -> structured result.
 
 ```php
 use Sujip\PayPal\Notifications\Adapter\SuperglobalWebhookRequestAdapter;
@@ -417,13 +418,29 @@ try {
 ```bash
 composer install
 composer test
+composer stan
+```
+
+## Manual Sandbox Smoke Test
+
+Use `scripts/smoke/sandbox-webhook-smoke.php` to call your local webhook endpoint with controlled headers and payloads while validating your integration.
+
+```bash
+php scripts/smoke/sandbox-webhook-smoke.php \
+  --url="http://127.0.0.1:8000/webhook/paypal" \
+  --payload='{"id":"WH-TEST","event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"CAP-1"}}' \
+  --header="PAYPAL-TRANSMISSION-ID: trans-1" \
+  --header="PAYPAL-TRANSMISSION-TIME: 2026-02-21T00:00:00Z" \
+  --header="PAYPAL-TRANSMISSION-SIG: sig" \
+  --header="PAYPAL-CERT-URL: https://api-m.sandbox.paypal.com/v1/notifications/certs/CERT-123" \
+  --header="PAYPAL-AUTH-ALGO: SHA256withRSA"
 ```
 
 ## Contributing
 
-Contributions are welcome. Include tests for behavior changes.
+Contributions are welcome. Please include tests for behavior changes.
 
-See `SUPPORT.md` for support flow and `SECURITY.md` for vulnerability reporting.
+See `CONTRIBUTING.md` for contributor workflow, `SUPPORT.md` for support flow, and `SECURITY.md` for vulnerability reporting.
 
 ## License
 

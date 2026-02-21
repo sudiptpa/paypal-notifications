@@ -43,3 +43,6 @@ jobs:
 
       - name: Lint PHP files
         run: find src tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --no-progress

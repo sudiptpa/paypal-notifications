@@ -62,8 +62,12 @@ All notable changes to this project will be documented in this file.
 - Tests for event envelope parsing and invalid raw-event payload handling.
 - Tests for typed event mapping, router dispatching, and idempotency guard behavior.
 - Added `SECURITY.md`, `SUPPORT.md`, and issue templates for production OSS maintenance.
+- Added `CONTRIBUTING.md` with development and PR workflow.
+- Added `.gitattributes` export-ignore rules for cleaner package distributions.
 - Added `examples/` for webhook endpoint, IPN endpoint, and custom transport integration.
+- Added `scripts/smoke/sandbox-webhook-smoke.php` for manual sandbox endpoint checks.
 - CI now runs PHPUnit plus PHP syntax lint (`php -l`) across `src/` and `tests/`.
+- Added PHPStan analysis (`composer stan`) and CI execution.
 
 ## [1.0.0] - 2026-02-21
 

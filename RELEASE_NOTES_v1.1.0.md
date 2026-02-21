@@ -28,6 +28,10 @@
   - `SuperglobalWebhookRequestAdapter`
   - `WebhooksResource::requestFromAdapter(...)`
 - Added `WebhookProcessor` + `WebhookProcessingResult` for structured observability.
+- Added `WebhookProcessor` + `WebhookProcessingResult` so webhook handling outcomes are easier to track.
+- Added PHPStan static analysis tooling + CI execution.
+- Added contributor workflow guide (`CONTRIBUTING.md`) and export-ignore policy (`.gitattributes`).
+- Added a manual sandbox smoke test helper script for endpoint verification.
 - Added production OSS files: `SECURITY.md`, `SUPPORT.md`, issue templates.
 - Added runnable `examples/` for webhook, IPN, custom transport, and adapter template.
 

@@ -34,7 +34,12 @@ final readonly class VerifyInstantPaymentNotificationRequest
         $parsed = [];
         parse_str($rawBody, $parsed);
 
-        return self::fromArray($parsed)->withRawBody($rawBody);
+        $normalized = [];
+        foreach ($parsed as $key => $value) {
+            $normalized[(string) $key] = $value;
+        }
+
+        return self::fromArray($normalized)->withRawBody($rawBody);
     }
 
     public function withRawBody(string $rawBody): self
