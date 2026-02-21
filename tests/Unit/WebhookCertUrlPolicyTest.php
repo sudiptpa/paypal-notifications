@@ -16,10 +16,9 @@ final class WebhookCertUrlPolicyTest extends TestCase
     {
         $policy = new WebhookCertUrlPolicy();
         $config = new ClientConfig('client', 'secret', 'wh', Environment::Sandbox);
+        $this->expectNotToPerformAssertions();
 
         $policy->assertValid('https://api-m.sandbox.paypal.com/v1/notifications/certs/CERT-123', $config);
-
-        $this->assertTrue(true);
     }
 
     public function testRejectsQueryStringInCertUrl(): void

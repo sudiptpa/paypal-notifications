@@ -4,9 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- No changes yet.
+
+## [1.0.0] - 2026-02-21
+
 ### Added
 
+- Initial stable production release of `sudiptpa/paypal-notifications`
 - PHP baseline standardized to 8.2+ with support through 8.5.
+- PayPal Webhooks signature verification aligned with PayPal Verify Webhook Signature flow.
+- OAuth token acquisition with in-memory token caching.
+- Legacy Instant Payment Notification verification module with modernized APIs.
+- Resource-first public API:
+  - `webhooks()->verifySignature(...)`
+  - `ipn()->verify(...)`
+  - `instantPaymentNotification()->verify(...)`
+- Dependency-light core:
+  - native `CurlTransport`
+  - transport extension via `TransportInterface`
+  - no hard dependency on framework or external HTTP clients
 - Typed webhook event envelope support:
   - `WebhookEventInterface`
   - `UnknownWebhookEvent`
@@ -59,27 +75,24 @@ All notable changes to this project will be documented in this file.
   - `WebhookProcessor`
   - `WebhookProcessingResult`
   - `WebhookObserverInterface` + `NullWebhookObserver`
+- Explicit exception model and safer error boundaries:
+  - strict webhook header and payload validation
+  - explicit non-2xx verification failure handling
+  - transport and OAuth failure mapping to dedicated exception paths
+  - OAuth transport-failure mapping to authentication exceptions
 - Tests for event envelope parsing and invalid raw-event payload handling.
 - Tests for typed event mapping, router dispatching, and idempotency guard behavior.
+- Tooling and quality baseline:
+  - PHPUnit test suite
+  - PHPStan static analysis
+  - GitHub Actions CI matrix for PHP 8.2, 8.3, 8.4, and 8.5
+  - lowest-dependency install coverage
+  - CI runs PHPUnit plus syntax lint across `src/` and `tests/`
+- PHP 8.5-safe cURL handle close behavior.
 - Added `SECURITY.md`, `SUPPORT.md`, and issue templates for production OSS maintenance.
+- Added `CONTRIBUTING.md` with development and PR workflow.
+- Added `.gitattributes` export-ignore rules for cleaner package distributions.
 - Added `examples/` for webhook endpoint, IPN endpoint, and custom transport integration.
-- CI now runs PHPUnit plus PHP syntax lint (`php -l`) across `src/` and `tests/`.
-
-## [1.0.0] - 2026-02-21
-
-### Added
-
-- Initial production release of `sudiptpa/paypal-notifications`
-- Webhooks Verify Signature flow with OAuth token handling
-- In-memory OAuth token caching
-- Legacy Instant Payment Notification verification module
-- Dependency-light architecture with native `CurlTransport`
-- Transport extension contract for custom HTTP adapters
-- Typed request/response models, enums, and explicit exceptions
-- PHPUnit test suite with unit and integration-like coverage
-- GitHub Actions CI matrix (PHP 8.2-8.5) with lowest-dependency run
-- Strict webhook `cert_url` validation (`https` + PayPal domain)
-- Explicit non-2xx webhook verification failure handling
-- OAuth transport-failure mapping to authentication exceptions
-- PHP 8.5-safe cURL handle close behavior
-- Production-focused README with simple-to-advanced usage
+- Added `scripts/smoke/sandbox-webhook-smoke.php` for manual sandbox endpoint checks.
+- Production-focused README with simple-to-advanced usage.
+- Added release notes and upgrade documentation.

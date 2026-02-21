@@ -69,6 +69,9 @@ abstract readonly class AbstractWebhookEvent implements WebhookEventInterface
         return is_string($value) && $value !== '' ? $value : null;
     }
 
+    /**
+     * @return array<string,mixed>
+     */
     protected function resourceArray(string $key): array
     {
         $resource = $this->resource();

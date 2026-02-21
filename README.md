@@ -15,6 +15,7 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Release Highlights (v1.0.0)](#release-highlights-v100)
 - [Webhook Verification (Simple)](#webhook-verification-simple)
 - [Webhook Verification (Advanced)](#webhook-verification-advanced)
 - [Typed Event Parsing](#typed-event-parsing)
@@ -29,11 +30,12 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Error Handling](#error-handling)
 - [Production Checklist](#production-checklist)
 - [Testing](#testing)
+- [Manual Sandbox Smoke Test](#manual-sandbox-smoke-test)
 - [Contributing](#contributing)
 
 ## Why This Package
 
-This SDK is built for modern PHP projects that need PayPal notification verification without framework lock-in or heavy HTTP dependencies.
+This SDK is for PHP projects that need reliable PayPal notification verification without framework lock-in.
 
 Design goals:
 
@@ -41,7 +43,7 @@ Design goals:
 - minimal hard dependencies
 - explicit models and enums
 - transport extensibility
-- safe defaults for production usage
+- safe production defaults
 
 ## Features
 
@@ -75,7 +77,7 @@ Design goals:
 - Unknown event fallback (`UnknownWebhookEvent`) for forward compatibility
 - Event router helper for clean application handlers
 - Framework adapter contract for framework-specific request bridges
-- High-level `WebhookProcessor` with structured processing result (observability friendly)
+- High-level `WebhookProcessor` with structured processing result (easy to log and monitor)
 - Idempotency guard support for duplicate event prevention
 - Legacy Instant Payment Notification verification (`cmd=_notify-validate`)
 - Native cURL transport included (`CurlTransport`)
@@ -119,6 +121,17 @@ $client = new PayPalClient(
     transport: new CurlTransport(),
 );
 ```
+
+## Release Highlights (v1.0.0)
+
+- PayPal Webhooks signature verification with PayPal-aligned request fields and validation flow.
+- Legacy Instant Payment Notification support maintained for migration-safe integrations.
+- Typed webhook events and enum-driven routing helpers for cleaner handlers.
+- Idempotency guard support to reduce duplicate webhook side effects.
+- Replay-window and cert URL policy controls for stronger production security.
+- Framework-agnostic adapters for request extraction without framework lock-in.
+- Native cURL transport plus extension interface for custom HTTP stacks.
+- CI-validated on PHP 8.2, 8.3, 8.4, and 8.5.
 
 ## Webhook Verification (Simple)
 
@@ -198,7 +211,7 @@ Mapped event models:
 - `PaymentPayoutsItemSucceededEvent`
 - `PaymentPayoutsItemDeniedEvent`
 
-Unmapped events return `UnknownWebhookEvent` and preserve full raw payload.
+Unmapped events return `UnknownWebhookEvent` and keep the full raw payload.
 
 ## Event Catalog
 
@@ -285,7 +298,7 @@ Built-in generic adapters:
 
 ## Webhook Processor
 
-`WebhookProcessor` gives an end-to-end flow: request extraction -> signature verification -> event parsing -> optional idempotency -> optional routing -> structured result.
+`WebhookProcessor` handles the full flow: request extraction -> signature verification -> event parsing -> optional idempotency -> optional routing -> structured result.
 
 ```php
 use Sujip\PayPal\Notifications\Adapter\SuperglobalWebhookRequestAdapter;
@@ -404,26 +417,45 @@ try {
 
 ## Production Checklist
 
-- Always verify webhook signatures before processing payloads.
-- Enforce replay-window checks (`maxWebhookTransmissionAgeSeconds`) and keep clock skew tight.
-- Persist processed webhook event IDs to prevent duplicates.
-- Use HTTPS endpoint only.
-- Keep `clientSecret` outside source control.
-- Prefer Webhooks for all new integrations.
-- Treat Instant Payment Notification as legacy migration path.
+- Configure a unique webhook endpoint per environment (sandbox and live).
+- Verify webhook signatures before any business logic.
+- Set `maxWebhookTransmissionAgeSeconds` and `allowedWebhookClockSkewSeconds` for replay protection.
+- Keep `strictPayPalCertUrlValidation` enabled in production.
+- Persist webhook event IDs in a durable store and enable idempotency guard.
+- Handle verification failures with fail-closed behavior (return non-2xx on invalid signatures).
+- Keep `clientSecret` in a secure secret store; never commit credentials.
+- Log PayPal `debug_id` for failed verification calls to simplify support investigations.
+- Monitor duplicate, failed, and unknown event-type counts.
+- Prefer Webhooks for all new integrations; treat Instant Payment Notification as legacy-only.
 
 ## Testing
 
 ```bash
 composer install
 composer test
+composer stan
+```
+
+## Manual Sandbox Smoke Test
+
+Use `scripts/smoke/sandbox-webhook-smoke.php` to call your local webhook endpoint with controlled headers and payloads while validating your integration.
+
+```bash
+php scripts/smoke/sandbox-webhook-smoke.php \
+  --url="http://127.0.0.1:8000/webhook/paypal" \
+  --payload='{"id":"WH-TEST","event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"CAP-1"}}' \
+  --header="PAYPAL-TRANSMISSION-ID: trans-1" \
+  --header="PAYPAL-TRANSMISSION-TIME: 2026-02-21T00:00:00Z" \
+  --header="PAYPAL-TRANSMISSION-SIG: sig" \
+  --header="PAYPAL-CERT-URL: https://api-m.sandbox.paypal.com/v1/notifications/certs/CERT-123" \
+  --header="PAYPAL-AUTH-ALGO: SHA256withRSA"
 ```
 
 ## Contributing
 
-Contributions are welcome. Include tests for behavior changes.
+Contributions are welcome. Please include tests for behavior changes.
 
-See `SUPPORT.md` for support flow and `SECURITY.md` for vulnerability reporting.
+See `CONTRIBUTING.md` for contributor workflow, `SUPPORT.md` for support flow, and `SECURITY.md` for vulnerability reporting.
 
 ## License
 
