@@ -16,10 +16,20 @@
   - `onDisputeCreated(...)`
   - `onSubscriptionPaymentFailed(...)`
 - Added webhook replay protection support with configurable window/skew.
+- Added hardened cert URL policy controls:
+  - trusted host suffixes
+  - required certificate path prefix
+  - strict HTTPS-port policy
 - Added config-aligned request helper:
   - `WebhooksResource::requestFromRawPayload(...)`
+- Added framework adapter primitives:
+  - `WebhookRequestAdapterInterface`
+  - `ArrayWebhookRequestAdapter`
+  - `SuperglobalWebhookRequestAdapter`
+  - `WebhooksResource::requestFromAdapter(...)`
+- Added `WebhookProcessor` + `WebhookProcessingResult` for structured observability.
 - Added production OSS files: `SECURITY.md`, `SUPPORT.md`, issue templates.
-- Added runnable `examples/` for webhook, IPN, and custom transport.
+- Added runnable `examples/` for webhook, IPN, custom transport, and adapter template.
 
 ## Upgrade Guide
 

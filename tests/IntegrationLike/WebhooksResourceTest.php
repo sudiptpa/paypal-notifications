@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sujip\PayPal\Notifications\Tests\IntegrationLike;
 
 use PHPUnit\Framework\TestCase;
+use Sujip\PayPal\Notifications\Adapter\ArrayWebhookRequestAdapter;
 use Sujip\PayPal\Notifications\Config\ClientConfig;
 use Sujip\PayPal\Notifications\Config\Environment;
 use Sujip\PayPal\Notifications\Enum\VerificationStatus;
@@ -166,5 +167,55 @@ final class WebhooksResourceTest extends TestCase
         );
 
         $this->assertFalse($request->strictPayPalCertUrlValidation);
+    }
+
+    public function testBuildsRequestFromAdapter(): void
+    {
+        $client = new PayPalClient(
+            config: new ClientConfig('client', 'secret', 'WH-ID-123', Environment::Sandbox),
+            transport: new FakeTransport([]),
+        );
+
+        $request = $client->webhooks()->requestFromAdapter(new ArrayWebhookRequestAdapter(
+            rawBody: '{"id":"evt_1","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+            headers: [
+                'PAYPAL-TRANSMISSION-ID' => 'trans-1',
+                'PAYPAL-TRANSMISSION-TIME' => '2026-01-01T00:00:00Z',
+                'PAYPAL-TRANSMISSION-SIG' => 'sig',
+                'PAYPAL-CERT-URL' => 'https://api-m.sandbox.paypal.com/v1/notifications/certs/CERT-123',
+                'PAYPAL-AUTH-ALGO' => 'SHA256withRSA',
+            ],
+            webhookId: 'WH-OVERRIDE-1',
+        ));
+
+        $this->assertSame('WH-OVERRIDE-1', $request->webhookId);
+        $this->assertSame('trans-1', $request->transmissionId);
+    }
+
+    public function testRejectsCertUrlOutsideExpectedCertPathPrefix(): void
+    {
+        $transport = new FakeTransport([
+            new HttpResponse(200, '{"access_token":"token-1","expires_in":3600}', []),
+        ]);
+
+        $client = new PayPalClient(
+            config: new ClientConfig('client', 'secret', 'WH-ID-123', Environment::Sandbox),
+            transport: $transport,
+            clock: new FixedClock(new \DateTimeImmutable('2026-01-01T00:00:10Z')),
+        );
+
+        $request = VerifyWebhookSignatureRequest::fromRawPayload(
+            rawBody: '{"id":"evt_1","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+            headers: [
+                'PAYPAL-TRANSMISSION-ID' => 'trans-1',
+                'PAYPAL-TRANSMISSION-TIME' => '2026-01-01T00:00:00Z',
+                'PAYPAL-TRANSMISSION-SIG' => 'sig',
+                'PAYPAL-CERT-URL' => 'https://api-m.sandbox.paypal.com/v1/notifications/not-certs/CERT-123',
+                'PAYPAL-AUTH-ALGO' => 'SHA256withRSA',
+            ],
+        );
+
+        $this->expectException(VerificationException::class);
+        $client->webhooks()->verifySignature($request);
     }
 }
