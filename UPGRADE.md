@@ -24,4 +24,6 @@
 - No hard dependency on Guzzle, Symfony, or Laravel.
 - Transport extension via a small contract.
 - Typed enums and result models.
+- Typed webhook event parsing (`parseEvent` / `parseRawEvent`) with safe unknown fallback.
+- Optional event routing and idempotency helpers for production webhook consumers.
 - Better error boundaries and safer production behavior.

@@ -10,6 +10,8 @@ interface WebhookEventInterface
 
     public function eventType(): string;
 
+    public function is(string $eventType): bool;
+
     public function createTime(): ?string;
 
     public function resourceType(): ?string;

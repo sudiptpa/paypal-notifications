@@ -17,7 +17,9 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Quick Start](#quick-start)
 - [Webhook Verification (Simple)](#webhook-verification-simple)
 - [Webhook Verification (Advanced)](#webhook-verification-advanced)
-- [Typed Event Parsing (Phase 1)](#typed-event-parsing-phase-1)
+- [Typed Event Parsing](#typed-event-parsing)
+- [Event Routing](#event-routing)
+- [Idempotency Guard](#idempotency-guard)
 - [Instant Payment Notification (Legacy)](#instant-payment-notification-legacy)
 - [Transport Extension](#transport-extension)
 - [Error Handling](#error-handling)
@@ -47,10 +49,15 @@ Design goals:
   - `PAYPAL-CERT-URL`
   - `PAYPAL-AUTH-ALGO`
 - OAuth client credentials flow with in-memory token caching
+- Typed event parsing with mapped models for:
+  - `PAYMENT.CAPTURE.COMPLETED`
+  - `PAYMENT.CAPTURE.DENIED`
+  - `PAYMENT.CAPTURE.REFUNDED`
+  - `CHECKOUT.ORDER.APPROVED`
+- Unknown event fallback (`UnknownWebhookEvent`) for forward compatibility
+- Event router helper for clean application handlers
+- Idempotency guard support for duplicate event prevention
 - Legacy Instant Payment Notification verification (`cmd=_notify-validate`)
-- Typed status models:
-  - webhooks: `SUCCESS | FAILURE`
-  - Instant Payment Notification: `VERIFIED | INVALID | ERROR`
 - Native cURL transport included (`CurlTransport`)
 - Custom transport support via `TransportInterface`
 - Strict exception model and safe error handling
@@ -110,24 +117,24 @@ if (!$result->isSuccess()) {
     exit('invalid webhook signature');
 }
 
-// Webhook is verified; process the event payload.
+// Webhook is verified; continue with event parsing/handling.
 ```
 
 ## Webhook Verification (Advanced)
 
-Use webhook ID override when running multi-tenant webhook endpoints:
+Use webhook ID override for multi-tenant endpoints:
 
 ```php
 $request = VerifyWebhookSignatureRequest::fromRawPayload(
     rawBody: $rawBody,
     headers: $headers,
-    webhookId: $resolvedWebhookIdForTenant,
+    webhookId: $resolvedWebhookId,
 );
 
 $result = $client->webhooks()->verifyWebhookSignature($request);
 ```
 
-Read debug fields:
+Inspect debug fields:
 
 ```php
 $status = $result->status->value;      // SUCCESS | FAILURE
@@ -135,39 +142,71 @@ $debugId = $result->debugId;           // PayPal debug ID if present
 $raw = $result->rawResponse;           // Raw API response payload
 ```
 
-## Typed Event Parsing (Phase 1)
+## Typed Event Parsing
 
-Phase 1 introduces a safe typed envelope for all webhook events:
-
-- `webhooks()->parseEvent(array $payload)`
-- `webhooks()->parseRawEvent(string $rawBody)`
-
-Current behavior:
-
-- returns `UnknownWebhookEvent` envelope for all event types
-- preserves normalized core metadata (`id`, `event_type`, `create_time`, etc.)
-- preserves full raw payload for forward compatibility
-
-Example:
+Parse to typed models from payload array or raw JSON:
 
 ```php
-<?php
-
-declare(strict_types=1);
-
 $event = $client->webhooks()->parseRawEvent($rawBody);
 
-$eventId = $event->id();
-$eventType = $event->eventType();
-$resource = $event->resource();
-$raw = $event->raw();
+if ($event->is('PAYMENT.CAPTURE.COMPLETED')) {
+    // typed model returned for mapped event type
+}
 ```
 
-This gives you stable parsing now, while later phases add dedicated models for high-value PayPal events.
+Mapped event models:
+
+- `PaymentCaptureCompletedEvent`
+- `PaymentCaptureDeniedEvent`
+- `PaymentCaptureRefundedEvent`
+- `CheckoutOrderApprovedEvent`
+
+Unmapped events return `UnknownWebhookEvent` and preserve full raw payload.
+
+## Event Routing
+
+Use `WebhookEventRouter` to map event types to handlers:
+
+```php
+use Sujip\PayPal\Notifications\Webhook\WebhookEventRouter;
+
+$router = (new WebhookEventRouter())
+    ->on('PAYMENT.CAPTURE.COMPLETED', function ($event) {
+        // handle capture completed
+    })
+    ->on('CHECKOUT.ORDER.APPROVED', function ($event) {
+        // handle order approved
+    })
+    ->fallback(function ($event) {
+        // log/ignore unknown event types
+    });
+
+$router->dispatch($event);
+```
+
+## Idempotency Guard
+
+Use idempotency to avoid duplicate webhook processing:
+
+```php
+use Sujip\PayPal\Notifications\Idempotency\InMemoryIdempotencyStore;
+use Sujip\PayPal\Notifications\Idempotency\WebhookIdempotencyGuard;
+
+$guard = new WebhookIdempotencyGuard(new InMemoryIdempotencyStore());
+
+if (!$guard->checkAndRemember($event)) {
+    // duplicate or missing event ID -> skip processing
+    return;
+}
+
+// process event exactly once in this store scope
+```
+
+For production, implement `IdempotencyStoreInterface` with persistent storage (Redis, DB, cache).
 
 ## Instant Payment Notification (Legacy)
 
-Instant Payment Notification is legacy. Keep using it only for existing integrations until fully migrated to Webhooks.
+Instant Payment Notification is legacy. Keep using it only for existing integrations while migrating to Webhooks.
 
 Verify from array payload:
 
@@ -196,7 +235,7 @@ $result = $client->instantPaymentNotification()->verifyRaw($raw);
 
 ## Transport Extension
 
-You can use any HTTP client stack by implementing this contract:
+Use any HTTP client stack by implementing this contract:
 
 ```php
 use Sujip\PayPal\Notifications\Contracts\TransportInterface;
@@ -212,7 +251,7 @@ final class CustomTransport implements TransportInterface
 }
 ```
 
-Then inject it into `PayPalClient`.
+Inject custom transport into `PayPalClient`.
 
 ## Error Handling
 
@@ -237,8 +276,8 @@ try {
 
 ## Production Checklist
 
-- Always verify webhook signatures before processing event payloads.
-- Persist processed webhook event IDs to avoid duplicate processing.
+- Always verify webhook signatures before processing payloads.
+- Persist processed webhook event IDs to prevent duplicates.
 - Use HTTPS endpoint only.
 - Keep `clientSecret` outside source control.
 - Prefer Webhooks for all new integrations.
