@@ -1,6 +1,55 @@
-# Release Notes v1.0.0
+# Release Notes
 
-## Highlights
+## v1.1.0 (2026-02-22)
+
+### Highlights
+
+- Added optional persisted OAuth token caching:
+  - `TokenCacheInterface`
+  - `InMemoryTokenCache`
+  - `FileTokenCache`
+  - `RedisTokenCache` (via `KeyValueStoreInterface`, no Redis dependency in core)
+- Added optional persistent idempotency support:
+  - `AtomicIdempotencyStoreInterface`
+  - `RedisIdempotencyStore` (via `KeyValueStoreInterface`)
+  - `WebhookIdempotencyGuard` now uses atomic `putIfAbsent()` when supported
+- Added typed exceptions for safer failure handling:
+  - `SignatureVerificationFailed`
+  - `TransportFailed`
+  - `MalformedPayload`
+- Added configurable retry strategy for webhook verification calls:
+  - `verificationMaxRetries`
+  - `verificationRetryBackoffMs`
+  - `verificationRetryMaxBackoffMs`
+  - `verificationRetryHttpStatusCodes`
+- Expanded typed webhook event coverage across major PayPal families:
+  - Payments/Captures (including refunds)
+  - Disputes
+  - Checkout/Orders
+  - Subscriptions
+  - Payouts
+- Reorganized event implementations by category while preserving backward compatibility through wrappers.
+- Added fixture-backed contract tests to lock event mapping behavior.
+- Added contributor docs:
+  - `ARCHITECTURE.md`
+  - `docs/adding-event-mapping.md`
+- README updated with production-focused guidance for caching, idempotency, retry strategy, dead-letter flow, and custom transport integration.
+
+### Compatibility
+
+- Public API remains backward compatible.
+- No framework dependencies added.
+- Core remains transport-agnostic with `CurlTransport` as default.
+
+### Validation
+
+- PHPUnit: pass
+- PHPStan: pass
+- CI matrix support: PHP 8.2, 8.3, 8.4, 8.5
+
+## v1.0.0 (2026-02-21)
+
+### Highlights
 
 - First stable production release of `sudiptpa/paypal-notifications`.
 - PayPal-aligned Webhooks verification flow:
@@ -34,7 +83,7 @@
   - `SUPPORT.md`
   - examples and sandbox smoke script
 
-## Upgrade Guide (from `sudiptpa/paypal-ipn`)
+### Upgrade Guide (from `sudiptpa/paypal-ipn`)
 
 1. Replace package dependency:
 
@@ -44,12 +93,10 @@ composer require sudiptpa/paypal-notifications
 ```
 
 2. Initialize `PayPalClient` with explicit config and transport.
-
 3. Move active integrations to Webhooks verification as primary path.
-
 4. Keep Instant Payment Notification only for legacy endpoints still in migration.
 
-## Minimum Recommended Rollout Sequence
+### Minimum Recommended Rollout Sequence
 
 1. Deploy with signature verification enabled but side effects disabled in staging.
 2. Add idempotency storage before production traffic.
@@ -57,13 +104,13 @@ composer require sudiptpa/paypal-notifications
 4. Roll out business handlers event-by-event.
 5. Monitor invalid signature rate and unknown event-type counts.
 
-## Validation Summary
+### Validation Summary
 
 - PHPUnit: passing
 - PHPStan: passing
 - Composer validate: passing
 
-## Notes
+### Notes
 
 - This release is designed to be framework-agnostic and dependency-light.
 - For production support issues, include PayPal `debug_id` when available.
