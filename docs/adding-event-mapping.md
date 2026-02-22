@@ -4,7 +4,15 @@ This guide explains how to add a typed PayPal webhook event safely.
 
 ## 1) Create the event class
 
-Add a class under `src/Webhook/Event/` extending `AbstractWebhookEvent`.
+Add a class under the appropriate category folder in `src/Webhook/Event/` extending `AbstractWebhookEvent`.
+
+Examples:
+
+- `src/Webhook/Event/Payments/`
+- `src/Webhook/Event/Disputes/`
+- `src/Webhook/Event/Orders/`
+- `src/Webhook/Event/Subscriptions/`
+- `src/Webhook/Event/Payouts/`
 
 Example template:
 
@@ -41,4 +49,3 @@ Add a sanitized payload fixture in `tests/Fixtures/webhooks/` and include it in 
 
 - Keep existing event classes unchanged unless absolutely required.
 - Keep unknown types mapped to `UnknownWebhookEvent`.
-

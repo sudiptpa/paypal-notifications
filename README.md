@@ -458,6 +458,8 @@ Popular choices for custom implementations are Guzzle, Symfony HttpClient, and L
 
 See `docs/adding-event-mapping.md` for the full workflow and test requirements.
 
+Event files are organized by PayPal categories under `src/Webhook/Event/` (`Payments`, `Disputes`, `Orders`, `Subscriptions`, `Payouts`).
+
 ## Dead-Letter Guidance
 
 Dead-letter persistence is application-specific and intentionally not built into core. Recommended fields for replay workflows:

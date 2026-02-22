@@ -27,6 +27,12 @@ src/
   Resource/                     Main API resources (Webhooks, IPN)
   Transport/                    Default CurlTransport
   Webhook/                      Webhook request/result/processor/router/events
+    Event/
+      Payments/                 Capture/refund related events
+      Disputes/                 Customer dispute events
+      Orders/                   Checkout order events
+      Subscriptions/            Billing subscription events
+      Payouts/                  Payout batch/item events
 ```
 
 ## Runtime Flow
@@ -73,7 +79,7 @@ Custom OAuth token persistence strategies can be plugged into `PayPalClient`.
 
 To add a new typed webhook event:
 
-1. Add a class under `src/Webhook/Event/`.
+1. Add a class under the category folder in `src/Webhook/Event/` (for example `Payments/`, `Disputes/`, `Orders/`, `Subscriptions/`, `Payouts/`).
 2. Implement typed accessors from `resource`.
 3. Register mapping in `EventFactory`.
 4. Add fixtures/tests in `tests/Unit/EventFactoryTest.php` and parsing tests.
@@ -93,4 +99,3 @@ To add a new typed webhook event:
    - `composer test`
    - `composer stan`
 4. Update docs (`README.md`, `CHANGELOG.md`, this file) when behavior changes.
-

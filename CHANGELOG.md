@@ -31,6 +31,12 @@ All notable changes to this project will be documented in this file.
 - `OAuthTokenProvider` now supports optional persisted token cache injection.
 - `PayPalClient` accepts optional `TokenCacheInterface` in constructor.
 - Webhook verification flow now supports conservative retries for transient failures.
+- Event files are now organized by PayPal categories under `src/Webhook/Event/`:
+  - `Payments/`
+  - `Disputes/`
+  - `Orders/`
+  - `Subscriptions/`
+  - `Payouts/`
 - README expanded with caching, persistent idempotency, retry strategy, dead-letter guidance, and updated exception list.
 
 ### Tested
