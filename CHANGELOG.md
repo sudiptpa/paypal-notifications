@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-02-22
+
 ### Added
 
-- `TokenCacheInterface` with reference implementations:
+- `TokenCacheInterface` with persisted cache-ready implementations:
   - `InMemoryTokenCache`
   - `FileTokenCache`
   - `RedisTokenCache` (via `KeyValueStoreInterface`, no Redis dependency required)
@@ -31,12 +33,13 @@ All notable changes to this project will be documented in this file.
 - `OAuthTokenProvider` now supports optional persisted token cache injection.
 - `PayPalClient` accepts optional `TokenCacheInterface` in constructor.
 - Webhook verification flow now supports conservative retries for transient failures.
-- Event files are now organized by PayPal categories under `src/Webhook/Event/`:
+- Event files are organized by PayPal categories under `src/Webhook/Event/`:
   - `Payments/`
   - `Disputes/`
   - `Orders/`
   - `Subscriptions/`
   - `Payouts/`
+- Backward compatibility preserved for previous event class paths through wrappers.
 - README expanded with caching, persistent idempotency, retry strategy, dead-letter guidance, and updated exception list.
 
 ### Tested
@@ -46,6 +49,7 @@ All notable changes to this project will be documented in this file.
   - `RedisTokenCache`
   - `RedisIdempotencyStore`
 - Added integration-like webhook verification tests for retry and typed failure modes.
+- Added contract fixture tests for event mapping stability.
 
 ## [1.0.0] - 2026-02-21
 
