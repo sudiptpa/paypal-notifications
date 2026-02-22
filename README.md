@@ -11,6 +11,7 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 
 ## Table of Contents
 
+- [At a Glance](#at-a-glance)
 - [Why This Package](#why-this-package)
 - [Features](#features)
 - [Requirements](#requirements)
@@ -38,6 +39,24 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Testing](#testing)
 - [Manual Sandbox Smoke Test](#manual-sandbox-smoke-test)
 - [Contributing](#contributing)
+
+## At a Glance
+
+Usage:
+
+- Verify PayPal webhook signatures before processing events.
+- Parse webhook payloads into typed event models.
+- Route events using clear type-based handlers.
+- Process webhooks with idempotency protection and structured outcomes.
+- Verify legacy Instant Payment Notification (IPN) during migration windows.
+
+Benefits:
+
+- Security-first verification aligned with PayPal’s flow.
+- Typed models and typed exceptions for safer handling.
+- Retry controls for transient verification failures.
+- Minimal dependencies with framework-agnostic design.
+- Backward-compatible event API paths for smoother upgrades.
 
 ## Why This Package
 
