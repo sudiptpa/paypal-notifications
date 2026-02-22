@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sujip\PayPal\Notifications;
 
 use Sujip\PayPal\Notifications\Auth\OAuthTokenProvider;
+use Sujip\PayPal\Notifications\Auth\TokenCacheInterface;
 use Sujip\PayPal\Notifications\Config\ClientConfig;
 use Sujip\PayPal\Notifications\Config\SystemClock;
 use Sujip\PayPal\Notifications\Contracts\ClockInterface;
@@ -28,11 +29,12 @@ final class PayPalClient
         private readonly TransportInterface $transport,
         ?LoggerInterface $logger = null,
         ?ClockInterface $clock = null,
+        ?TokenCacheInterface $tokenCache = null,
     ) {
         $logger ??= new NullLogger();
         $clock ??= new SystemClock();
 
-        $tokenProvider = new OAuthTokenProvider($this->config, $this->transport, $clock, $logger);
+        $tokenProvider = new OAuthTokenProvider($this->config, $this->transport, $clock, $logger, $tokenCache);
 
         $this->webhooks = new WebhooksResource($this->config, $this->transport, $tokenProvider, $logger, $clock);
         $this->instantPaymentNotification = new InstantPaymentNotificationResource(

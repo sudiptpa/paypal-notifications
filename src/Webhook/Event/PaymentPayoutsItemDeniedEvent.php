@@ -4,37 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\PayPal\Notifications\Webhook\Event;
 
-final readonly class PaymentPayoutsItemDeniedEvent extends AbstractWebhookEvent
+/** @deprecated Use Payouts\PaymentPayoutsItemDeniedEvent */
+final readonly class PaymentPayoutsItemDeniedEvent extends \Sujip\PayPal\Notifications\Webhook\Event\Payouts\PaymentPayoutsItemDeniedEvent
 {
-    public function payoutItemId(): ?string
-    {
-        $item = $this->resourceArray('payout_item');
-        $id = $item['payout_item_id'] ?? null;
-
-        return is_string($id) && $id !== '' ? $id : null;
-    }
-
-    public function payoutBatchId(): ?string
-    {
-        $item = $this->resourceArray('payout_item');
-        $batchId = $item['payout_batch_id'] ?? null;
-
-        return is_string($batchId) && $batchId !== '' ? $batchId : null;
-    }
-
-    public function transactionStatus(): ?string
-    {
-        $item = $this->resourceArray('payout_item');
-        $status = $item['transaction_status'] ?? null;
-
-        return is_string($status) && $status !== '' ? $status : null;
-    }
-
-    public function errorsName(): ?string
-    {
-        $errors = $this->resourceArray('errors');
-        $name = $errors['name'] ?? null;
-
-        return is_string($name) && $name !== '' ? $name : null;
-    }
 }

@@ -20,6 +20,10 @@ final class WebhookIdempotencyGuard
             return false;
         }
 
+        if ($this->store instanceof AtomicIdempotencyStoreInterface) {
+            return $this->store->putIfAbsent($eventId);
+        }
+
         if ($this->store->has($eventId)) {
             return false;
         }

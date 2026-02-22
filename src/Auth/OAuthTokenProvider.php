@@ -15,13 +15,16 @@ use Sujip\PayPal\Notifications\Http\HttpRequest;
 final class OAuthTokenProvider
 {
     private ?OAuthToken $cachedToken = null;
+    private readonly string $cacheKey;
 
     public function __construct(
         private readonly ClientConfig $config,
         private readonly TransportInterface $transport,
         private readonly ClockInterface $clock,
         private readonly LoggerInterface $logger,
+        private readonly ?TokenCacheInterface $tokenCache = null,
     ) {
+        $this->cacheKey = hash('sha256', $this->config->environment->name.'|'.$this->config->clientId);
     }
 
     public function token(): string
@@ -31,6 +34,14 @@ final class OAuthTokenProvider
         $now = $this->clock->now();
         if ($this->cachedToken !== null && !$this->cachedToken->isExpiredAt($now)) {
             return $this->cachedToken->accessToken;
+        }
+
+        if ($this->cachedToken === null && $this->tokenCache !== null) {
+            $persisted = $this->tokenCache->get($this->cacheKey);
+            if ($persisted !== null && !$persisted->isExpiredAt($now)) {
+                $this->cachedToken = $persisted;
+                return $persisted->accessToken;
+            }
         }
 
         $request = new HttpRequest(
@@ -76,6 +87,7 @@ final class OAuthTokenProvider
             accessToken: $token,
             expiresAt: $now->modify(sprintf('+%d seconds', max(1, $expiresIn - $safetyWindow))),
         );
+        $this->tokenCache?->put($this->cacheKey, $this->cachedToken);
 
         return $token;
     }

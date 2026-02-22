@@ -24,9 +24,14 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 - [Event Routing](#event-routing)
 - [Framework Adapters](#framework-adapters)
 - [Webhook Processor](#webhook-processor)
+- [Token Caching](#token-caching)
 - [Idempotency Guard](#idempotency-guard)
+- [Persistent Idempotency Stores](#persistent-idempotency-stores)
+- [Retry Strategy](#retry-strategy)
 - [Instant Payment Notification (Legacy)](#instant-payment-notification-legacy)
 - [Transport Extension](#transport-extension)
+- [Extending Event Mappings](#extending-event-mappings)
+- [Dead-Letter Guidance](#dead-letter-guidance)
 - [Examples](#examples)
 - [Error Handling](#error-handling)
 - [Production Checklist](#production-checklist)
@@ -80,6 +85,9 @@ Design goals:
 - Framework adapter contract for framework-specific request bridges
 - High-level `WebhookProcessor` with structured processing result (easy to log and monitor)
 - Idempotency guard support for duplicate event prevention
+- Optional persisted OAuth token caches (file or Redis-style key-value adapter)
+- Optional persistent idempotency stores (Redis-style key-value adapter and app-managed database stores)
+- Configurable retry strategy for transient verification failures
 - Legacy Instant Payment Notification verification (`cmd=_notify-validate`)
 - Native cURL transport included (`CurlTransport`)
 - Custom transport support via `TransportInterface`
@@ -319,6 +327,31 @@ if (!$result->accepted) {
 }
 ```
 
+## Token Caching
+
+By default, OAuth tokens are cached in memory for the current process. For multi-worker deployments, use a persisted cache.
+
+File cache:
+
+```php
+use Sujip\PayPal\Notifications\Auth\FileTokenCache;
+
+$client = new PayPalClient(
+    config: $config,
+    transport: new CurlTransport(),
+    tokenCache: new FileTokenCache(__DIR__.'/.cache/paypal-oauth'),
+);
+```
+
+Redis-style cache (no Redis dependency in core):
+
+```php
+use Sujip\PayPal\Notifications\Auth\RedisTokenCache;
+
+$store = new YourRedisBackedKeyValueStore(); // implements KeyValueStoreInterface
+$tokenCache = new RedisTokenCache($store);
+```
+
 ## Idempotency Guard
 
 Use idempotency to avoid duplicate webhook processing:
@@ -338,6 +371,37 @@ if (!$guard->checkAndRemember($event)) {
 ```
 
 For production, implement `IdempotencyStoreInterface` with persistent storage (Redis, DB, cache).
+
+## Persistent Idempotency Stores
+
+Redis-style store:
+
+```php
+use Sujip\PayPal\Notifications\Idempotency\RedisIdempotencyStore;
+
+$store = new RedisIdempotencyStore(new YourRedisBackedKeyValueStore());
+$guard = new WebhookIdempotencyGuard($store);
+```
+
+Database-backed idempotency is supported via `IdempotencyStoreInterface` in your app code. Keep storage logic close to your framework/DB stack and inject your store into `WebhookIdempotencyGuard`.
+
+## Retry Strategy
+
+Webhook signature verification can retry transient failures using conservative defaults.
+
+```php
+$config = new ClientConfig(
+    clientId: '...',
+    clientSecret: '...',
+    webhookId: '...',
+    verificationMaxRetries: 2,
+    verificationRetryBackoffMs: 150,
+    verificationRetryMaxBackoffMs: 1000,
+    verificationRetryHttpStatusCodes: [429, 500, 502, 503, 504],
+);
+```
+
+Set `verificationMaxRetries` to `0` to disable retries.
 
 ## Instant Payment Notification (Legacy)
 
@@ -388,6 +452,25 @@ final class CustomTransport implements TransportInterface
 
 Inject custom transport into `PayPalClient`.
 
+Popular choices for custom implementations are Guzzle, Symfony HttpClient, and Laravel HTTP client. Keep these adapters in your app or in separate bridge packages to avoid dependency lock-in in core.
+
+## Extending Event Mappings
+
+See `docs/adding-event-mapping.md` for the full workflow and test requirements.
+
+Event files are organized by PayPal categories under `src/Webhook/Event/` (`Payments`, `Disputes`, `Orders`, `Subscriptions`, `Payouts`).
+
+## Dead-Letter Guidance
+
+Dead-letter persistence is application-specific and intentionally not built into core. Recommended fields for replay workflows:
+
+- webhook event ID
+- raw payload
+- normalized headers
+- verification status and PayPal debug ID
+- processing error class/message
+- first-seen and last-seen timestamps
+
 ## Examples
 
 - `examples/webhook-endpoint.php` - full webhook verification + event routing flow.
@@ -401,10 +484,13 @@ Main exceptions:
 
 - `ConfigurationException`
 - `TransportException`
+- `TransportFailed`
 - `AuthenticationException`
 - `InvalidWebhookHeadersException`
 - `InvalidPayloadException`
 - `VerificationException`
+- `SignatureVerificationFailed`
+- `MalformedPayload`
 
 Example:
 

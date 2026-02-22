@@ -11,6 +11,10 @@ use Sujip\PayPal\Notifications\Contracts\LoggerInterface;
 use Sujip\PayPal\Notifications\Contracts\TransportInterface;
 use Sujip\PayPal\Notifications\Contracts\WebhookRequestAdapterInterface;
 use Sujip\PayPal\Notifications\Enum\VerificationStatus;
+use Sujip\PayPal\Notifications\Exception\MalformedPayload;
+use Sujip\PayPal\Notifications\Exception\SignatureVerificationFailed;
+use Sujip\PayPal\Notifications\Exception\TransportException;
+use Sujip\PayPal\Notifications\Exception\TransportFailed;
 use Sujip\PayPal\Notifications\Exception\VerificationException;
 use Sujip\PayPal\Notifications\Http\HttpRequest;
 use Sujip\PayPal\Notifications\Webhook\WebhookCertUrlPolicy;
@@ -51,30 +55,59 @@ final class WebhooksResource
         $body = json_encode($request->toPayload($this->config->webhookId));
 
         if ($body === false) {
-            throw new VerificationException('Unable to encode verify-webhook-signature request payload.');
+            throw new MalformedPayload('Unable to encode verify-webhook-signature request payload.');
         }
 
-        $response = $this->transport->send(new HttpRequest(
-            method: 'POST',
-            url: $this->config->webhookVerificationUrl(),
-            headers: [
-                'Authorization' => 'Bearer '.$token,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ],
-            body: $body,
-            timeoutSeconds: $this->config->timeoutSeconds,
-        ));
+        $attempt = 0;
+        $maxRetries = $this->config->verificationMaxRetries;
+        $retryableStatusCodes = array_flip($this->config->verificationRetryHttpStatusCodes);
+        $response = null;
+        $decoded = null;
 
-        $decoded = json_decode($response->body, true);
-        if (!is_array($decoded)) {
-            throw new VerificationException('PayPal webhook verification response is not valid JSON.');
-        }
+        while (true) {
+            try {
+                $response = $this->transport->send(new HttpRequest(
+                    method: 'POST',
+                    url: $this->config->webhookVerificationUrl(),
+                    headers: [
+                        'Authorization' => 'Bearer '.$token,
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'application/json',
+                    ],
+                    body: $body,
+                    timeoutSeconds: $this->config->timeoutSeconds,
+                ));
+            } catch (TransportException $exception) {
+                if ($attempt < $maxRetries) {
+                    $this->sleepForRetry($attempt);
+                    ++$attempt;
+                    continue;
+                }
 
-        if ($response->statusCode < 200 || $response->statusCode >= 300) {
-            throw new VerificationException(
+                throw new TransportFailed('PayPal webhook verification request failed during transport.', 0, $exception);
+            }
+
+            if ($response->statusCode >= 200 && $response->statusCode < 300) {
+                $decoded = json_decode($response->body, true);
+                if (!is_array($decoded)) {
+                    throw new MalformedPayload('PayPal webhook verification response is not valid JSON.');
+                }
+                break;
+            }
+
+            if ($attempt < $maxRetries && isset($retryableStatusCodes[$response->statusCode])) {
+                $this->sleepForRetry($attempt);
+                ++$attempt;
+                continue;
+            }
+
+            throw new SignatureVerificationFailed(
                 sprintf('PayPal webhook verification request failed with HTTP %d.', $response->statusCode)
             );
+        }
+
+        if (!is_array($decoded)) {
+            throw new VerificationException('PayPal webhook verification did not produce a valid response payload.');
         }
 
         $paypalStatus = (string) ($decoded['verification_status'] ?? 'FAILURE');
@@ -133,9 +166,22 @@ final class WebhooksResource
     {
         $decoded = json_decode($rawBody, true);
         if (!is_array($decoded)) {
-            throw new VerificationException('Webhook event body is not valid JSON.');
+            throw new MalformedPayload('Webhook event body is not valid JSON.');
         }
 
         return $this->parseEvent($decoded);
+    }
+
+    private function sleepForRetry(int $attempt): void
+    {
+        $baseBackoffMs = $this->config->verificationRetryBackoffMs;
+        $maxBackoffMs = max($baseBackoffMs, $this->config->verificationRetryMaxBackoffMs);
+        $sleepMs = min($maxBackoffMs, $baseBackoffMs * (2 ** $attempt));
+
+        if ($sleepMs <= 0) {
+            return;
+        }
+
+        usleep($sleepMs * 1000);
     }
 }

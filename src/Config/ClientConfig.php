@@ -18,6 +18,11 @@ final readonly class ClientConfig
         public ?int $maxWebhookTransmissionAgeSeconds = 300,
         public int $allowedWebhookClockSkewSeconds = 30,
         public bool $strictPayPalCertUrlValidation = true,
+        public int $verificationMaxRetries = 0,
+        public int $verificationRetryBackoffMs = 150,
+        public int $verificationRetryMaxBackoffMs = 1000,
+        /** @var list<int> */
+        public array $verificationRetryHttpStatusCodes = [429, 500, 502, 503, 504],
         /** @var list<string> */
         public array $trustedWebhookCertHostSuffixes = ['paypal.com'],
         public string $requiredWebhookCertPathPrefix = '/v1/notifications/certs/',
@@ -33,6 +38,18 @@ final readonly class ClientConfig
 
         if ($this->allowedWebhookClockSkewSeconds < 0) {
             throw new ConfigurationException('allowedWebhookClockSkewSeconds must be >= 0.');
+        }
+
+        if ($this->verificationMaxRetries < 0) {
+            throw new ConfigurationException('verificationMaxRetries must be >= 0.');
+        }
+
+        if ($this->verificationRetryBackoffMs < 0) {
+            throw new ConfigurationException('verificationRetryBackoffMs must be >= 0.');
+        }
+
+        if ($this->verificationRetryMaxBackoffMs < 0) {
+            throw new ConfigurationException('verificationRetryMaxBackoffMs must be >= 0.');
         }
 
         if ($this->requiredWebhookCertPathPrefix === '') {

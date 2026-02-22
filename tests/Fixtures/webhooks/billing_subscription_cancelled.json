@@ -1,0 +1,11 @@
+{
+  "id": "WH-FIXTURE-3",
+  "event_type": "BILLING.SUBSCRIPTION.CANCELLED",
+  "resource": {
+    "id": "I-SUB-77",
+    "status": "CANCELLED",
+    "plan_id": "P-77",
+    "status_change_note": "Cancelled by merchant"
+  }
+}
+
