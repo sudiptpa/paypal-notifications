@@ -114,7 +114,7 @@ Design goals:
 
 ## Requirements
 
-- PHP `^8.2` (supports up to `<8.6`)
+- PHP `8.2` to `8.5`
 - `ext-json`
 - `ext-curl`
 
