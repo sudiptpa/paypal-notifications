@@ -1,0 +1,13 @@
+{
+  "id": "WH-FIXTURE-1",
+  "event_type": "PAYMENT.CAPTURE.COMPLETED",
+  "resource": {
+    "id": "CAPTURE-123",
+    "status": "COMPLETED",
+    "amount": {
+      "value": "10.00",
+      "currency_code": "USD"
+    }
+  }
+}
+

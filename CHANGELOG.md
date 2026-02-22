@@ -4,7 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- No changes yet.
+### Added
+
+- `TokenCacheInterface` with reference implementations:
+  - `InMemoryTokenCache`
+  - `FileTokenCache`
+  - `RedisTokenCache` (via `KeyValueStoreInterface`, no Redis dependency required)
+- `KeyValueStoreInterface` for optional distributed cache integrations.
+- Persistent idempotency store references:
+  - `RedisIdempotencyStore` (via `KeyValueStoreInterface`)
+  - app-managed database store via `IdempotencyStoreInterface`
+- `AtomicIdempotencyStoreInterface` and atomic path in `WebhookIdempotencyGuard`.
+- New typed exceptions:
+  - `SignatureVerificationFailed`
+  - `TransportFailed`
+  - `MalformedPayload`
+- Configurable webhook verification retry controls in `ClientConfig`:
+  - `verificationMaxRetries`
+  - `verificationRetryBackoffMs`
+  - `verificationRetryMaxBackoffMs`
+  - `verificationRetryHttpStatusCodes`
+- `ARCHITECTURE.md` with contributor-oriented package map and extension guide.
+
+### Changed
+
+- `OAuthTokenProvider` now supports optional persisted token cache injection.
+- `PayPalClient` accepts optional `TokenCacheInterface` in constructor.
+- Webhook verification flow now supports conservative retries for transient failures.
+- README expanded with caching, persistent idempotency, retry strategy, dead-letter guidance, and updated exception list.
+
+### Tested
+
+- Added unit tests for:
+  - `FileTokenCache`
+  - `RedisTokenCache`
+  - `RedisIdempotencyStore`
+- Added integration-like webhook verification tests for retry and typed failure modes.
 
 ## [1.0.0] - 2026-02-21
 

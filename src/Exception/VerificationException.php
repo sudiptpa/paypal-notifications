@@ -4,6 +4,6 @@ declare(strict_types=1);
 
 namespace Sujip\PayPal\Notifications\Exception;
 
-final class VerificationException extends PayPalException
+class VerificationException extends PayPalException
 {
 }

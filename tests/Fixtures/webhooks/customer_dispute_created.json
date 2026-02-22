@@ -1,0 +1,14 @@
+{
+  "id": "WH-FIXTURE-2",
+  "event_type": "CUSTOMER.DISPUTE.CREATED",
+  "resource": {
+    "dispute_id": "PP-D-123",
+    "status": "OPEN",
+    "reason": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+    "dispute_amount": {
+      "value": "5.00",
+      "currency_code": "USD"
+    }
+  }
+}
+
