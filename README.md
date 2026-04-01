@@ -9,6 +9,12 @@ Framework-agnostic PHP SDK for PayPal **Webhooks** and legacy **Instant Payment 
 [![PHP](https://img.shields.io/badge/php-8.2--8.5-777bb4.svg)](https://www.php.net/)
 [![License](https://img.shields.io/github/license/sudiptpa/paypal-notifications)](LICENSE)
 
+---
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/sudiptpa)
+
+If this package has been useful to you, GitHub Sponsors is a simple way to support ongoing maintenance, improvements, and future releases.
+
 ## Table of Contents
 
 - [At a Glance](#at-a-glance)
