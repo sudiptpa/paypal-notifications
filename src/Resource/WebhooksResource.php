@@ -15,7 +15,6 @@ use Sujip\PayPal\Notifications\Exception\MalformedPayload;
 use Sujip\PayPal\Notifications\Exception\SignatureVerificationFailed;
 use Sujip\PayPal\Notifications\Exception\TransportException;
 use Sujip\PayPal\Notifications\Exception\TransportFailed;
-use Sujip\PayPal\Notifications\Exception\VerificationException;
 use Sujip\PayPal\Notifications\Http\HttpRequest;
 use Sujip\PayPal\Notifications\Webhook\WebhookCertUrlPolicy;
 use Sujip\PayPal\Notifications\Webhook\Event\EventFactory;
@@ -104,10 +103,6 @@ final class WebhooksResource
             throw new SignatureVerificationFailed(
                 sprintf('PayPal webhook verification request failed with HTTP %d.', $response->statusCode)
             );
-        }
-
-        if ($decoded === null) {
-            throw new VerificationException('PayPal webhook verification did not produce a valid response payload.');
         }
 
         /** @var array<string, mixed> $decoded */
