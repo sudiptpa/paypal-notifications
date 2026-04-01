@@ -106,10 +106,11 @@ final class WebhooksResource
             );
         }
 
-        if (!is_array($decoded)) {
+        if ($decoded === null) {
             throw new VerificationException('PayPal webhook verification did not produce a valid response payload.');
         }
 
+        /** @var array<string, mixed> $decoded */
         $paypalStatus = (string) ($decoded['verification_status'] ?? 'FAILURE');
         $status = VerificationStatus::fromString($paypalStatus);
 
